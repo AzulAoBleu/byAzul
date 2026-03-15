@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>50/50 — byazul.io</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --text: #111111;
+      --text-muted: #888888;
+      --border: #e0e0e0;
+      --border-hover: #bbbbbb;
+      --surface: #f5f5f5;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111111;
+        --text: #f0f0f0;
+        --text-muted: #777777;
+        --border: #2a2a2a;
+        --border-hover: #444444;
+        --surface: #1a1a1a;
+      }
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 3rem 1rem 4rem;
+      gap: 2rem;
+    }
+
+    .big-btn {
+      width: 190px; height: 190px;
+      border-radius: 50%;
+      border: 3px solid var(--text);
+      background: transparent;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 30px; font-weight: 900;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      transition: transform 0.08s, background 0.08s;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      user-select: none; -webkit-user-select: none;
+    }
+    .big-btn:not(:disabled):hover { background: var(--surface); }
+    .big-btn:not(:disabled):active { transform: scale(0.95); }
+    .big-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    svg.ring-svg {
+      position: absolute; top: -4px; left: -4px;
+      width: calc(100% + 8px); height: calc(100% + 8px);
+      transform: rotate(-90deg); pointer-events: none;
+    }
+
+    .stats-row {
+      display: flex; gap: 2.5rem;
+      align-items: center; justify-content: center; flex-wrap: wrap;
+    }
+    .stat-block { text-align: center; }
+    .stat-num { font-size: 34px; font-weight: 900; font-family: 'Space Mono', monospace; line-height: 1; }
+    .stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-top: 5px; }
+    .stat-divider { width: 1px; height: 44px; background: var(--border); }
+
+    .outcome-msg { font-size: 16px; font-weight: 600; min-height: 26px; text-align: center; transition: opacity 0.3s; opacity: 0; }
+    .outcome-msg.show { opacity: 1; }
+    .outcome-msg.survived { color: var(--green); }
+    .outcome-msg.died { color: var(--red); }
+
+    .name-setup {
+      display: none; flex-direction: column;
+      align-items: center; gap: 10px;
+    }
+    .name-setup p { font-size: 14px; color: var(--text-muted); }
+    .name-row { display: flex; gap: 8px; width: 100%; max-width: 300px; }
+    .name-row input {
+      flex: 1; padding: 9px 13px;
+      font-family: 'Outfit', sans-serif; font-size: 14px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg); color: var(--text); outline: none;
+    }
+    .name-row input:focus { border-color: var(--border-hover); }
+    .name-row button {
+      padding: 9px 18px; font-family: 'Outfit', sans-serif;
+      font-size: 13px; font-weight: 700;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--text); color: var(--bg); cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .name-row button:hover { opacity: 0.8; }
+
+    .auto-toggle {
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; user-select: none; -webkit-user-select: none;
+      padding: 9px 18px;
+      border: 1px solid var(--border); border-radius: 999px;
+      font-size: 13px; font-weight: 600; color: var(--text-muted);
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      background: transparent;
+    }
+    .auto-toggle:hover { background: var(--surface); }
+    .auto-toggle.active { border-color: var(--border-hover); color: var(--text); background: var(--surface); }
+    .toggle-dot {
+      width: 28px; height: 16px; border-radius: 999px;
+      background: var(--border); position: relative;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+    .auto-toggle.active .toggle-dot { background: var(--text); }
+    .toggle-dot::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--bg); transition: transform 0.2s;
+    }
+    .auto-toggle.active .toggle-dot::after { transform: translateX(12px); }
+
+    .leaderboard {
+      width: 100%; max-width: 440px;
+      border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    }
+    .lb-header {
+      padding: 13px 18px; font-size: 11px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .lb-refresh { font-size: 10px; font-weight: 400; font-family: 'Space Mono', monospace; opacity: 0.7; }
+    .lb-row {
+      display: flex; align-items: center; padding: 11px 18px; gap: 13px;
+      border-bottom: 1px solid var(--border); transition: background 0.15s;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row:hover { background: var(--surface); }
+    .lb-row.me { background: var(--surface); }
+    .lb-rank { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text-muted); width: 22px; text-align: center; flex-shrink: 0; }
+    .lb-rank.gold { color: #f59e0b; }
+    .lb-rank.silver { color: #94a3b8; }
+    .lb-rank.bronze { color: #b45309; }
+    .lb-name { flex: 1; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
+    .lb-score b { font-weight: 700; color: var(--text); }
+    .lb-empty { padding: 28px 18px; text-align: center; font-size: 13px; color: var(--text-muted); }
+
+    .flash {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none; z-index: 9999; opacity: 0;
+      transition: opacity 0.12s;
+    }
+    .flash.green { background: rgba(34,197,94,0.13); }
+    .flash.red { background: rgba(239,68,68,0.13); }
+    .flash.show { opacity: 1; }
+
+    .footer {
+      font-size: 11px; color: var(--text-muted);
+      letter-spacing: 0.04em; margin-top: 1rem;
+    }
+    .footer a { color: var(--text-muted); text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="flash" id="flash"></div>
+
+<div style="position:relative;">
+  <button class="big-btn" id="mainBtn" onclick="handleClick()">
+    <svg class="ring-svg" viewBox="0 0 196 196">
+      <circle cx="98" cy="98" r="90" fill="none" stroke="var(--border)" stroke-width="3"/>
+      <circle cx="98" cy="98" r="90" fill="none" stroke="var(--text)" stroke-width="3"
+        stroke-dasharray="565.5" stroke-dashoffset="565.5" id="cooldownArc"
+        style="transition: stroke-dashoffset 0.05s linear;"/>
+    </svg>
+    50/50
+  </button>
+</div>
+
+<div class="stats-row">
+  <div class="stat-block">
+    <div class="stat-num" id="streakNum">0</div>
+    <div class="stat-label">Current streak</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-block">
+    <div class="stat-num" id="oddsNum">—</div>
+    <div class="stat-label">Odds survived</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-block">
+    <div class="stat-num" id="bestNum">0</div>
+    <div class="stat-label">Personal best</div>
+  </div>
+</div>
+
+<div class="outcome-msg" id="outcomeMsg">&nbsp;</div>
+
+<div class="name-setup" id="nameSetup">
+  <p>Enter your name for the leaderboard</p>
+  <div class="name-row">
+    <input type="text" id="nameInput" placeholder="Your name..." maxlength="20"
+      onkeydown="if(event.key==='Enter') saveName()" />
+    <button onclick="saveName()">Save</button>
+  </div>
+</div>
+
+<div class="auto-toggle" id="autoToggle" onclick="toggleAuto()">
+  <div class="toggle-dot"></div>
+  <span>Auto-click</span>
+</div>
+
+<div class="leaderboard">
+  <div class="lb-header">
+    <span>Leaderboard</span>
+    <span class="lb-refresh" id="lbRefresh">global</span>
+  </div>
+  <div id="lbBody"><div class="lb-empty">Loading...</div></div>
+</div>
+
+<div class="footer">inspired by <a href="https://neal.fun" target="_blank">neal.fun</a> · made with <a href="https://claude.ai" target="_blank">Claude</a> · <a href="https://byazul.io">byazul.io</a></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA55pYcEJiD_SPkzU2P4iKa7BCrOrkc14I",
+    authDomain: "byazu1.firebaseapp.com",
+    projectId: "byazu1",
+    storageBucket: "byazu1.firebasestorage.app",
+    messagingSenderId: "688363960723",
+    appId: "1:688363960723:web:c952a8e86f26ee33e31066",
+    databaseURL: "https://byazu1-default-rtdb.firebaseio.com"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const lbRef = ref(db, 'leaderboard');
+
+  const COOLDOWN_MS = 1000;
+  const AUTO_COOLDOWN_MS = 1050;
+  const ARC_LEN = 565.5;
+  const LB_REFRESH_SECS = 60;
+
+  let streak = 0;
+  let personalBest = 0;
+  let playerName = localStorage.getItem('byazul_name') || null;
+  let autoMode = false;
+  let onCooldown = false;
+  let autoTimeout = null;
+  let cooldownAnim = null;
+  let cooldownStart = null;
+
+  const mainBtn = document.getElementById('mainBtn');
+  const streakNum = document.getElementById('streakNum');
+  const oddsNum = document.getElementById('oddsNum');
+  const bestNum = document.getElementById('bestNum');
+  const outcomeMsg = document.getElementById('outcomeMsg');
+  const autoToggle = document.getElementById('autoToggle');
+  const flash = document.getElementById('flash');
+  const nameSetup = document.getElementById('nameSetup');
+  const cooldownArc = document.getElementById('cooldownArc');
+  const lbRefresh = document.getElementById('lbRefresh');
+  const lbBody = document.getElementById('lbBody');
+
+  function oddsText(s) {
+    if (s === 0) return '—';
+    return '1 in ' + Math.pow(2, s).toLocaleString();
+  }
+
+  function updateDisplay() {
+    streakNum.textContent = streak;
+    oddsNum.textContent = oddsText(streak);
+    bestNum.textContent = personalBest;
+  }
+
+  function doFlash(color) {
+    flash.className = 'flash ' + color + ' show';
+    setTimeout(() => flash.classList.remove('show'), 220);
+  }
+
+  function showOutcome(msg, type) {
+    outcomeMsg.className = 'outcome-msg ' + type + ' show';
+    outcomeMsg.textContent = msg;
+    setTimeout(() => {
+      outcomeMsg.classList.remove('show');
+      setTimeout(() => { outcomeMsg.textContent = '\u00a0'; }, 300);
+    }, 1400);
+  }
+
+  function startCooldown() {
+    onCooldown = true;
+    mainBtn.disabled = true;
+    cooldownStart = performance.now();
+    if (cooldownAnim) cancelAnimationFrame(cooldownAnim);
+    const tick = (now) => {
+      const progress = Math.min((now - cooldownStart) / COOLDOWN_MS, 1);
+      cooldownArc.setAttribute('stroke-dashoffset', (ARC_LEN * (1 - progress)).toFixed(1));
+      if (progress < 1) {
+        cooldownAnim = requestAnimationFrame(tick);
+      } else {
+        cooldownArc.setAttribute('stroke-dashoffset', ARC_LEN);
+        onCooldown = false;
+        mainBtn.disabled = false;
+        cooldownAnim = null;
+      }
+    };
+    cooldownAnim = requestAnimationFrame(tick);
+  }
+
+  async function pushToLeaderboard(score) {
+    if (!playerName || score < 1) return;
+    try {
+      const entryRef = ref(db, 'leaderboard/' + playerName.replace(/[^a-zA-Z0-9_-]/g, '_'));
+      const snap = await get(entryRef);
+      const existing = snap.exists() ? snap.val().streak : 0;
+      if (score > existing) {
+        await set(entryRef, { name: playerName, streak: score });
+      }
+    } catch(e) { console.error('Firebase write error:', e); }
+  }
+
+  window.handleClick = async function() {
+    if (onCooldown) return;
+    startCooldown();
+
+    const survived = Math.random() < 0.5;
+
+    if (survived) {
+      streak++;
+      if (streak > personalBest) {
+        personalBest = streak;
+        await pushToLeaderboard(personalBest);
+      }
+      doFlash('green');
+      showOutcome('Survived!', 'survived');
+    } else {
+      if (streak > 0) showOutcome('Died at streak ' + streak + '!', 'died');
+      else showOutcome('Died.', 'died');
+      streak = 0;
+      doFlash('red');
+    }
+
+    updateDisplay();
+
+    if (!playerName && personalBest >= 1) {
+      nameSetup.style.display = 'flex';
+    }
+
+    if (autoMode) scheduleAutoClick();
+  }
+
+  function scheduleAutoClick() {
+    if (autoTimeout) clearTimeout(autoTimeout);
+    autoTimeout = setTimeout(() => {
+      if (autoMode && !onCooldown) window.handleClick();
+      else if (autoMode) scheduleAutoClick();
+    }, AUTO_COOLDOWN_MS);
+  }
+
+  window.toggleAuto = function() {
+    autoMode = !autoMode;
+    autoToggle.classList.toggle('active', autoMode);
+    if (autoMode) scheduleAutoClick();
+    else { if (autoTimeout) { clearTimeout(autoTimeout); autoTimeout = null; } }
+  }
+
+  window.saveName = function() {
+    const input = document.getElementById('nameInput');
+    const n = input.value.trim();
+    if (!n) return;
+    playerName = n;
+    localStorage.setItem('byazul_name', n);
+    nameSetup.style.display = 'none';
+    if (personalBest > 0) pushToLeaderboard(personalBest);
+  }
+
+  function renderEntries(data) {
+    if (!data) { lbBody.innerHTML = '<div class="lb-empty">Be the first!</div>'; return; }
+    const entries = Object.values(data).sort((a, b) => b.streak - a.streak).slice(0, 8);
+    if (entries.length === 0) { lbBody.innerHTML = '<div class="lb-empty">Be the first!</div>'; return; }
+    const rankClass = (i) => ['gold','silver','bronze'][i] || '';
+    lbBody.innerHTML = entries.map((e, i) => {
+      const denom = Math.pow(2, e.streak);
+      const isMe = playerName && e.name === playerName;
+      return `<div class="lb-row${isMe ? ' me' : ''}">
+        <span class="lb-rank ${rankClass(i)}">${i + 1}</span>
+        <span class="lb-name">${e.name.replace(/</g,'&lt;')}</span>
+        <span class="lb-score">1 in ${denom.toLocaleString()} &nbsp;<b>(${e.streak})</b></span>
+      </div>`;
+    }).join('');
+  }
+
+  async function fetchAndRender() {
+    try {
+      const snap = await get(lbRef);
+      renderEntries(snap.val());
+    } catch(e) { console.error('Firebase read error:', e); }
+  }
+
+  function startRefreshTimer() {
+    let lastMinute = -1;
+    const tick = () => {
+      const nowSecs = Math.floor(Date.now() / 1000);
+      const secs = LB_REFRESH_SECS - (nowSecs % LB_REFRESH_SECS);
+      lbRefresh.textContent = `global · refreshes in ${String(secs).padStart(2,'0')}s`;
+      const currentMinute = Math.floor(nowSecs / LB_REFRESH_SECS);
+      if (currentMinute !== lastMinute) {
+        lastMinute = currentMinute;
+        fetchAndRender();
+      }
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  updateDisplay();
+  startRefreshTimer();
+</script>
+</body>
+</html>
